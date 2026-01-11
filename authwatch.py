@@ -7,13 +7,13 @@ import json
 
 def run_journalctl(since: str):
     """
-    Run journalctl and yield JSON events.
+    Run journalctl and yield JSON events for sshd.
     """
     cmd = [
         "journalctl",
         "-o", "json",
         "--since", since,
-        "_SYSTEMD_UNIT=ssh.service",
+        "_COMM=sshd",
     ]
 
     process = subprocess.Popen(
@@ -32,12 +32,12 @@ def run_journalctl(since: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AuthWatch – auth log analyzer (journalctl)"
+        description="AuthWatch – SSH failed login analyzer (journalctl)"
     )
     parser.add_argument(
         "--since",
-        default="1h",
-        help="Time range for journalctl (e.g. 5m, 1h, today)",
+        default="1 hour ago",
+        help="Time range for journalctl (e.g. '5 minutes ago', '1 hour ago', '1 day ago')",
     )
 
     args = parser.parse_args()
