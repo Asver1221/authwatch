@@ -46,9 +46,6 @@ No external Python packages required.
 ```bash
 git clone https://github.com/youruser/authwatch.git
 cd authwatch
-mkdir -p modules
-# session_audit.py and html_report.py go into modules/
-touch modules/__init__.py
 ```
 
 ---
