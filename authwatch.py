@@ -140,8 +140,8 @@ def main():
         return
 
     # ── python3 authwatch.py failed <time> ──
-    if len(raw) == 2 and raw[0] == "failed":
-        show_failed(parse_time_arg(raw[1]), raw[1])
+    if len(raw) == 2 and raw[1] == "failed":
+        show_failed(parse_time_arg(raw[0]), raw[0])
         return
 
     # ── help / fallback ──
@@ -149,7 +149,7 @@ def main():
     print()
     print("Usage:")
     print("  python3 authwatch.py <time>              Successful logins")
-    print("  python3 authwatch.py failed <time>       Failed login attempts")
+    print("  python3 authwatch.py <time> failed       Failed login attempts")
     print("  python3 authwatch.py scan                Full session audit (terminal)")
     print("  python3 authwatch.py scan --report       Full audit + HTML report")
     print("  python3 authwatch.py scan --report --output /tmp/report.html")
