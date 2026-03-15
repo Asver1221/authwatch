@@ -145,7 +145,6 @@ def check_passwd(findings: list, verbose: bool = True) -> list[dict]:
 
 def check_sudoers(findings: list, verbose: bool = True):
     header("🔑  SUDO RULES  (/etc/sudoers + sudoers.d)")
-    print()
 
     sources = ["/etc/sudoers"]
     sudoers_d = Path("/etc/sudoers.d")
@@ -177,6 +176,7 @@ def check_sudoers(findings: list, verbose: bool = True):
             findings.append({"level": "warn", "module": "sudoers",
                               "text": f"NOPASSWD rule in {path}:{lineno}: {line}"})
     else:
+        print()
         flag("No NOPASSWD rules found", "ok")
 
     if found_all and verbose:
@@ -496,6 +496,7 @@ def run_persistence_audit(verbose: bool = True) -> dict:
     print(c("bold", c("cyan",   "╔══════════════════════════════════════════════╗")))
     print(c("bold", c("cyan",   "║       AUTHWATCH – PERSISTENCE AUDIT          ║")))
     print(c("bold", c("cyan",   "╚══════════════════════════════════════════════╝")))
+    print()
 
     findings = []
 
