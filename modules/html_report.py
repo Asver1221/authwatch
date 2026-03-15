@@ -94,6 +94,22 @@ def generate_html(data: dict, output_path: str = "authwatch_report.html"):
             out.append(f'<div class="anomaly-card {lvl}">{a}</div>')
         return "\n".join(out)
 
+    def persistence_cards():
+        persistence = data.get("persistence", {})
+        findings = persistence.get("findings", []) if persistence else []
+        if not findings:
+            return '<div class="anomaly-ok">✓ No persistence indicators found</div>'
+        level_map = {"critical": "critical", "warn": "warning", "info": "info"}
+        icons     = {"critical": "🔴", "warn": "🟠", "info": "🟡"}
+        out = []
+        for f in findings:
+            lvl  = level_map.get(f.get("level", "info"), "info")
+            icon = icons.get(f.get("level", "info"), "🟡")
+            mod  = f.get("module", "").upper()
+            txt  = f.get("text", "")
+            out.append(f'<div class="anomaly-card {lvl}"><span style="opacity:.5;font-size:11px;margin-right:8px">[{mod}]</span>{icon}  {txt}</div>')
+        return "\n".join(out)
+
     ip_counts: dict = {}
     for e in lastb:
         ip_counts[e["ip"]] = ip_counts.get(e["ip"], 0) + 1
@@ -474,6 +490,15 @@ def generate_html(data: dict, output_path: str = "authwatch_report.html"):
         </tr></thead>
         <tbody>{rows_lastb()}</tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🔒</span> Persistence Findings
+    </div>
+    <div class="anomaly-grid">
+      {persistence_cards()}
     </div>
   </div>
 
