@@ -145,11 +145,18 @@ def check_passwd(findings: list, verbose: bool = True) -> list[dict]:
 
 def check_sudoers(findings: list, verbose: bool = True):
     header("🔑  SUDO RULES  (/etc/sudoers + sudoers.d)")
+    print()
 
-    sources = ["/etc/sudoers"]
+    sources = []
+    for path in ["/etc/sudoers"]:
+        if os.access(path, os.R_OK):
+            sources.append(path)
     sudoers_d = Path("/etc/sudoers.d")
     if sudoers_d.exists():
-        sources += [str(p) for p in sudoers_d.iterdir() if p.is_file()]
+        try:
+            sources += [str(p) for p in sudoers_d.iterdir() if p.is_file() and os.access(str(p), os.R_OK)]
+        except PermissionError:
+            pass
 
     found_nopasswd = []
     found_all      = []
@@ -167,6 +174,11 @@ def check_sudoers(findings: list, verbose: bool = True):
             if re.search(r"ALL\s*=\s*\(ALL", line_stripped):
                 found_all.append((path, lineno, line_stripped))
 
+    if not sources:
+        flag("Could not read sudoers (permission denied – run with sudo)", "info")
+        print()
+        return
+
     if found_nopasswd:
         print(f"\n  {c('bold', 'NOPASSWD entries (no password required for sudo):')}")
         for path, lineno, line in found_nopasswd:
@@ -176,7 +188,6 @@ def check_sudoers(findings: list, verbose: bool = True):
             findings.append({"level": "warn", "module": "sudoers",
                               "text": f"NOPASSWD rule in {path}:{lineno}: {line}"})
     else:
-        print()
         flag("No NOPASSWD rules found", "ok")
 
     if found_all and verbose:
@@ -211,7 +222,10 @@ def check_crontabs(findings: list, verbose: bool = True):
         path = Path(path_str)
         if not path.exists():
             continue
-        files = [path] if path.is_file() else list(path.iterdir())
+        try:
+            files = [path] if path.is_file() else list(path.iterdir())
+        except PermissionError:
+            continue
         for f in files:
             if not f.is_file():
                 continue
@@ -359,9 +373,13 @@ def check_systemd_units(findings: list, verbose: bool = True):
     found = []
 
     for base in search_paths:
-        if not base.exists():
+        try:
+            if not base.exists():
+                continue
+            service_files = list(base.rglob("*.service"))
+        except PermissionError:
             continue
-        for f in base.rglob("*.service"):
+        for f in service_files:
             content = read_file(str(f))
             if not content:
                 continue
@@ -395,8 +413,10 @@ def check_systemd_units(findings: list, verbose: bool = True):
         if verbose or unit["suspicious"] or unit["recent"]:
             flag(f"{label} {unit['path']}  [{unit['age_str']}]", level)
         if verbose:
+            print()
             for line in unit["exec"]:
                 print(f"    {c('dim', line)}")
+            print()
         if unit["suspicious"]:
             findings.append({"level": "critical", "module": "systemd",
                               "text": f"Suspicious systemd unit: {unit['path']}"})
@@ -496,7 +516,6 @@ def run_persistence_audit(verbose: bool = True) -> dict:
     print(c("bold", c("cyan",   "╔══════════════════════════════════════════════╗")))
     print(c("bold", c("cyan",   "║       AUTHWATCH – PERSISTENCE AUDIT          ║")))
     print(c("bold", c("cyan",   "╚══════════════════════════════════════════════╝")))
-    print()
 
     findings = []
 
