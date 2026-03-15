@@ -34,7 +34,7 @@ def c(color: str, text: str) -> str:
     return f"{COLORS.get(color, '')}{text}{COLORS['reset']}"
 
 def header(title: str):
-    print(f"\n{c('bold', c('cyan', '━' * 60))}")
+    print(f"{c('bold', c('cyan', '━' * 60))}")
     print(f"  {c('bold', title)}")
     print(f"{c('bold', c('cyan', '━' * 60))}")
 
@@ -135,6 +135,7 @@ def check_passwd(findings: list, verbose: bool = True) -> list[dict]:
             user_col = c("green", f"{u['username']:<20}")
             print(f"  {user_col} {u['uid']:<8} {shell_col} {u['home']}")
 
+    print()
     return users
 
 
@@ -144,6 +145,7 @@ def check_passwd(findings: list, verbose: bool = True) -> list[dict]:
 
 def check_sudoers(findings: list, verbose: bool = True):
     header("🔑  SUDO RULES  (/etc/sudoers + sudoers.d)")
+    print()
 
     sources = ["/etc/sudoers"]
     sudoers_d = Path("/etc/sudoers.d")
@@ -181,6 +183,7 @@ def check_sudoers(findings: list, verbose: bool = True):
         print(f"\n  {c('bold', 'ALL=(ALL) entries:')}")
         for path, lineno, line in found_all:
             flag(f"{os.path.basename(path)}:{lineno}  {line}", "info")
+    print()
 
 
 # ──────────────────────────────────────────────
@@ -219,6 +222,9 @@ def check_crontabs(findings: list, verbose: bool = True):
             for lineno, line in enumerate(content.splitlines(), 1):
                 line = line.strip()
                 if not line or line.startswith("#"):
+                    continue
+                # Only accept lines that look like actual cron schedule entries
+                if not re.match(r'^(@\w+|\*|[\d\-\*,/]+)\s', line):
                     continue
                 entries.append({
                     "source": str(f),
@@ -277,6 +283,14 @@ def check_crontabs(findings: list, verbose: bool = True):
             if verbose:
                 print(f"  {c('dim', '·')}  {e['source']}: {c('dim', e['line'])}")
 
+    flagged = any(
+        any(re.search(p, e["line"], re.IGNORECASE) for p in suspicious_patterns) or e["recent"]
+        for e in entries
+    )
+    if not flagged:
+        flag("No suspicious cron entries found", "ok")
+    print()
+
 
 # ──────────────────────────────────────────────
 # SSH authorized_keys
@@ -284,6 +298,7 @@ def check_crontabs(findings: list, verbose: bool = True):
 
 def check_authorized_keys(findings: list, verbose: bool = True):
     header("🗝️   SSH AUTHORIZED_KEYS")
+    print()
 
     users = get_real_users()
     found_any = False
@@ -323,6 +338,7 @@ def check_authorized_keys(findings: list, verbose: bool = True):
 
     if not found_any:
         flag("No authorized_keys files found", "ok")
+    print()
 
 
 # ──────────────────────────────────────────────
@@ -384,6 +400,7 @@ def check_systemd_units(findings: list, verbose: bool = True):
         if unit["suspicious"]:
             findings.append({"level": "critical", "module": "systemd",
                               "text": f"Suspicious systemd unit: {unit['path']}"})
+    print()
 
 
 # ──────────────────────────────────────────────
@@ -392,6 +409,7 @@ def check_systemd_units(findings: list, verbose: bool = True):
 
 def check_rc_files(findings: list, verbose: bool = True):
     header("🐚  SHELL RC FILES  (.bashrc / .profile / .bash_profile)")
+    print()
 
     rc_names = [".bashrc", ".bash_profile", ".profile", ".zshrc", ".zprofile"]
     suspicious_patterns = [
@@ -439,6 +457,7 @@ def check_rc_files(findings: list, verbose: bool = True):
 
     if not found_any:
         flag("No suspicious RC file entries found", "ok")
+    print()
 
 
 # ──────────────────────────────────────────────
@@ -456,14 +475,16 @@ def show_summary(findings: list):
         return
 
     if critical:
-        print(f"\n  {c('bold', c('red', f'CRITICAL ({len(critical)}):'))}")
+        print(f"  {c('bold', c('red', f'● CRITICAL  ({len(critical)})'))}\n")
         for f in critical:
-            print(f"  🔴  {f['text']}")
+            print(f"  {c('red', '🔴')}  {f['text']}")
+            print()
 
     if warnings:
-        print(f"\n  {c('bold', c('yellow', f'WARNINGS ({len(warnings)}):'))}")
+        print(f"  {c('bold', c('yellow', f'● WARNINGS  ({len(warnings)})'))}\n")
         for f in warnings:
-            print(f"  🟠  {f['text']}")
+            print(f"  {c('yellow', '🟠')}  {f['text']}")
+            print()
 
 
 # ──────────────────────────────────────────────
@@ -471,7 +492,8 @@ def show_summary(findings: list):
 # ──────────────────────────────────────────────
 
 def run_persistence_audit(verbose: bool = True) -> dict:
-    print(c("bold", c("cyan", "\n╔══════════════════════════════════════════════╗")))
+    print()
+    print(c("bold", c("cyan",   "╔══════════════════════════════════════════════╗")))
     print(c("bold", c("cyan",   "║       AUTHWATCH – PERSISTENCE AUDIT          ║")))
     print(c("bold", c("cyan",   "╚══════════════════════════════════════════════╝")))
 

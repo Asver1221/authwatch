@@ -83,6 +83,10 @@ def show_last(limit: int = 20) -> list:
         dur_col  = c("red", e["duration"]) if e["duration"] == "active" else e["duration"]
         print(f"  {user_col} {e['tty']:<8} {ip_col} {e['date']:<28} {dur_col}")
 
+    ext_logins = [e for e in entries if re.match(r"\d+\.\d+", e["ip"]) and e["user"] not in ("reboot","shutdown")]
+    if not ext_logins:
+        print(f"\n  {c('green', '✅  No external logins found.')}")
+
     return entries
 
 
@@ -137,6 +141,10 @@ def show_lastb(limit: int = 20) -> list:
             color = "red" if cnt > 10 else "yellow"
             print(f"  {ip:<22} {c(color, bar)} {cnt}")
 
+    brute_ips = [ip for ip, cnt in ip_counts.items() if cnt > 10]
+    if not brute_ips:
+        print(f"\n  {c('green', '✅  No brute-force patterns detected.')}")
+
     return entries
 
 
@@ -185,6 +193,10 @@ def show_lastlog() -> list:
         names = ", ".join(e["user"] for e in never[:10])
         print(f"\n  {c('dim', f'Accounts that never logged in: {names}')}")
 
+    ext_last = [e for e in logged_in if re.match(r"\d+\.\d+", e["ip"])]
+    if not ext_last:
+        print(f"\n  {c('green', '✅  No external IPs in login history.')}")
+
     return entries
 
 
@@ -226,6 +238,10 @@ def show_active_sessions() -> list:
         cmd_col  = c("magenta", e["command"][:40])
         user_col = c("green", f"{e['user']:<12}")
         print(f"  {user_col} {e['tty']:<8} {from_col} {e['login_at']:<8} {e['idle']:<8} {cmd_col}")
+
+    ext_active = [e for e in w_entries if re.match(r"\d+\.\d+", e.get("from_ip", ""))]
+    if not ext_active:
+        print(f"\n  {c('green', '✅  No active sessions from external IPs.')}")
 
     return w_entries
 
