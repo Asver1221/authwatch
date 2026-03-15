@@ -405,8 +405,10 @@ def check_systemd_units(findings: list, verbose: bool = True):
 
     if not found:
         flag("No user systemd units found", "ok")
+        print()
         return
 
+    print()
     for unit in found:
         level = "critical" if unit["suspicious"] else ("warn" if unit["recent"] else "info")
         label = "[SUSPICIOUS]" if unit["suspicious"] else ("[RECENT]" if unit["recent"] else "")
@@ -516,6 +518,7 @@ def run_persistence_audit(verbose: bool = True) -> dict:
     print(c("bold", c("cyan",   "╔══════════════════════════════════════════════╗")))
     print(c("bold", c("cyan",   "║       AUTHWATCH – PERSISTENCE AUDIT          ║")))
     print(c("bold", c("cyan",   "╚══════════════════════════════════════════════╝")))
+    print()
 
     findings = []
 
