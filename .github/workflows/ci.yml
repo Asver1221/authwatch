@@ -17,3 +17,6 @@ jobs:
 
       - run: python3 authwatch.py 2d failed
         continue-on-error: true
+
+      - run: python3 authwatch.py scan
+        continue-on-error: true
