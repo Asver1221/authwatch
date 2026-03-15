@@ -93,7 +93,7 @@ def get_real_users() -> list[dict]:
 # /etc/passwd – suspicious accounts
 # ──────────────────────────────────────────────
 
-def check_passwd(findings: list) -> list[dict]:
+def check_passwd(findings: list, verbose: bool = True) -> list[dict]:
     header("👤  /etc/passwd – USER ACCOUNTS")
     users = get_real_users()
     if not users:
@@ -127,7 +127,7 @@ def check_passwd(findings: list) -> list[dict]:
     else:
         flag("No unexpected UID 0 accounts found", "ok")
 
-    if suspicious:
+    if suspicious and verbose:
         print(f"\n  {'USERNAME':<20} {'UID':<8} {'SHELL':<25} {'HOME'}")
         print(f"  {'─'*20} {'─'*8} {'─'*25} {'─'*30}")
         for u in suspicious:
@@ -142,7 +142,7 @@ def check_passwd(findings: list) -> list[dict]:
 # /etc/sudoers
 # ──────────────────────────────────────────────
 
-def check_sudoers(findings: list):
+def check_sudoers(findings: list, verbose: bool = True):
     header("🔑  SUDO RULES  (/etc/sudoers + sudoers.d)")
 
     sources = ["/etc/sudoers"]
@@ -177,7 +177,7 @@ def check_sudoers(findings: list):
     else:
         flag("No NOPASSWD rules found", "ok")
 
-    if found_all:
+    if found_all and verbose:
         print(f"\n  {c('bold', 'ALL=(ALL) entries:')}")
         for path, lineno, line in found_all:
             flag(f"{os.path.basename(path)}:{lineno}  {line}", "info")
@@ -187,7 +187,7 @@ def check_sudoers(findings: list):
 # Crontabs
 # ──────────────────────────────────────────────
 
-def check_crontabs(findings: list):
+def check_crontabs(findings: list, verbose: bool = True):
     header("⏰  CRONTABS")
 
     cron_paths = [
@@ -274,14 +274,15 @@ def check_crontabs(findings: list):
             findings.append({"level": "warn", "module": "crontab",
                               "text": f"Recently modified cron entry in {e['source']}: {e['line']}"})
         else:
-            print(f"  {c('dim', '·')}  {e['source']}: {c('dim', e['line'])}")
+            if verbose:
+                print(f"  {c('dim', '·')}  {e['source']}: {c('dim', e['line'])}")
 
 
 # ──────────────────────────────────────────────
 # SSH authorized_keys
 # ──────────────────────────────────────────────
 
-def check_authorized_keys(findings: list):
+def check_authorized_keys(findings: list, verbose: bool = True):
     header("🗝️   SSH AUTHORIZED_KEYS")
 
     users = get_real_users()
@@ -313,12 +314,12 @@ def check_authorized_keys(findings: list):
             findings.append({"level": "warn", "module": "authorized_keys",
                               "text": f"authorized_keys modified recently ({age_str}): {ak_path}"})
 
-        for key in keys:
-            # Extract comment (last field after key data)
-            parts   = key.split()
-            comment = parts[2] if len(parts) >= 3 else c("dim", "(no comment)")
-            keytype = parts[0] if parts else "unknown"
-            print(f"    {c('dim', keytype):<30} {c('cyan', comment)}")
+        if verbose:
+            for key in keys:
+                parts   = key.split()
+                comment = parts[2] if len(parts) >= 3 else c("dim", "(no comment)")
+                keytype = parts[0] if parts else "unknown"
+                print(f"    {c('dim', keytype):<30} {c('cyan', comment)}")
 
     if not found_any:
         flag("No authorized_keys files found", "ok")
@@ -328,7 +329,7 @@ def check_authorized_keys(findings: list):
 # Systemd user units
 # ──────────────────────────────────────────────
 
-def check_systemd_units(findings: list):
+def check_systemd_units(findings: list, verbose: bool = True):
     header("⚙️   SYSTEMD USER UNITS")
 
     search_paths = []
@@ -375,9 +376,11 @@ def check_systemd_units(findings: list):
     for unit in found:
         level = "critical" if unit["suspicious"] else ("warn" if unit["recent"] else "info")
         label = "[SUSPICIOUS]" if unit["suspicious"] else ("[RECENT]" if unit["recent"] else "")
-        flag(f"{label} {unit['path']}  [{unit['age_str']}]", level)
-        for line in unit["exec"]:
-            print(f"    {c('dim', line)}")
+        if verbose or unit["suspicious"] or unit["recent"]:
+            flag(f"{label} {unit['path']}  [{unit['age_str']}]", level)
+        if verbose:
+            for line in unit["exec"]:
+                print(f"    {c('dim', line)}")
         if unit["suspicious"]:
             findings.append({"level": "critical", "module": "systemd",
                               "text": f"Suspicious systemd unit: {unit['path']}"})
@@ -387,7 +390,7 @@ def check_systemd_units(findings: list):
 # Shell RC files
 # ──────────────────────────────────────────────
 
-def check_rc_files(findings: list):
+def check_rc_files(findings: list, verbose: bool = True):
     header("🐚  SHELL RC FILES  (.bashrc / .profile / .bash_profile)")
 
     rc_names = [".bashrc", ".bash_profile", ".profile", ".zshrc", ".zprofile"]
@@ -467,19 +470,19 @@ def show_summary(findings: list):
 # Main
 # ──────────────────────────────────────────────
 
-def run_persistence_audit() -> dict:
+def run_persistence_audit(verbose: bool = True) -> dict:
     print(c("bold", c("cyan", "\n╔══════════════════════════════════════════════╗")))
     print(c("bold", c("cyan",   "║       AUTHWATCH – PERSISTENCE AUDIT          ║")))
     print(c("bold", c("cyan",   "╚══════════════════════════════════════════════╝")))
 
     findings = []
 
-    check_passwd(findings)
-    check_sudoers(findings)
-    check_crontabs(findings)
-    check_authorized_keys(findings)
-    check_systemd_units(findings)
-    check_rc_files(findings)
+    check_passwd(findings, verbose)
+    check_sudoers(findings, verbose)
+    check_crontabs(findings, verbose)
+    check_authorized_keys(findings, verbose)
+    check_systemd_units(findings, verbose)
+    check_rc_files(findings, verbose)
     show_summary(findings)
 
     return {
@@ -489,4 +492,4 @@ def run_persistence_audit() -> dict:
 
 
 if __name__ == "__main__":
-    run_persistence_audit()
+    run_persistence_audit(verbose=True)

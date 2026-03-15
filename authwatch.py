@@ -108,13 +108,26 @@ def cmd_scan(args):
         sys.exit(1)
 
     session_data     = run_session_audit()
-    persistence_data = run_persistence_audit()
+    persistence_data = run_persistence_audit(verbose=False)
 
     data = {**session_data, "persistence": persistence_data}
 
     if args.report:
         out = args.output or "authwatch_report.html"
         generate_html(data, output_path=out)
+
+
+# ──────────────────────────────────────────────
+# Persistence command
+# ──────────────────────────────────────────────
+
+def cmd_persistence():
+    try:
+        from modules.persistence import run_persistence_audit
+    except ImportError as e:
+        print(f"[AuthWatch] ERROR: Could not load module: {e}")
+        sys.exit(1)
+    run_persistence_audit(verbose=True)
 
 
 # ──────────────────────────────────────────────
@@ -138,6 +151,11 @@ def main():
         args.func(args)
         return
 
+    # ── python3 authwatch.py persistence ──
+    if len(raw) == 1 and raw[0] == "persistence":
+        cmd_persistence()
+        return
+
     # ── python3 authwatch.py <time> ──
     if len(raw) == 1 and raw[0] not in ("-h", "--help"):
         show_success(parse_time_arg(raw[0]), raw[0])
@@ -157,6 +175,7 @@ def main():
     print("  python3 authwatch.py scan                Full session audit (terminal)")
     print("  python3 authwatch.py scan --report       Full audit + HTML report")
     print("  python3 authwatch.py scan --report --output /tmp/report.html")
+    print("  python3 authwatch.py persistence       Full persistence audit (verbose)")
     print()
     print("Time format: 30m  2h  1d  2w")
 
