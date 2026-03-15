@@ -9,6 +9,10 @@ import json
 import re
 import sys
 
+from modules.session_audit import run_session_audit
+from modules.persistence   import run_persistence_audit
+from modules.html_report   import generate_html
+
 # ──────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────
@@ -99,35 +103,16 @@ def show_failed(since_raw: str, since_human: str):
 # ──────────────────────────────────────────────
 
 def cmd_scan(args):
-    try:
-        from modules.session_audit  import run_session_audit
-        from modules.persistence    import run_persistence_audit
-        from modules.html_report    import generate_html
-    except ImportError as e:
-        print(f"[AuthWatch] ERROR: Could not load module: {e}")
-        sys.exit(1)
+    verbose = getattr(args, "full", False)
 
     session_data     = run_session_audit()
-    persistence_data = run_persistence_audit(verbose=False)
+    persistence_data = run_persistence_audit(verbose=verbose)
 
     data = {**session_data, "persistence": persistence_data}
 
     if args.report:
         out = args.output or "authwatch_report.html"
         generate_html(data, output_path=out)
-
-
-# ──────────────────────────────────────────────
-# Persistence command
-# ──────────────────────────────────────────────
-
-def cmd_persistence():
-    try:
-        from modules.persistence import run_persistence_audit
-    except ImportError as e:
-        print(f"[AuthWatch] ERROR: Could not load module: {e}")
-        sys.exit(1)
-    run_persistence_audit(verbose=True)
 
 
 # ──────────────────────────────────────────────
@@ -145,15 +130,11 @@ def main():
         subparsers = parser.add_subparsers(dest="command")
         scan_p = subparsers.add_parser("scan", help="Full system session audit")
         scan_p.add_argument("--report", action="store_true", help="Generate an HTML report")
-        scan_p.add_argument("--output", type=str, help="Output path for HTML report (default: authwatch_report.html)")
+        scan_p.add_argument("--output", type=str,            help="Output path for HTML report (default: authwatch_report.html)")
+        scan_p.add_argument("--full",   action="store_true", help="Show full verbose output for all modules")
         scan_p.set_defaults(func=cmd_scan)
         args = parser.parse_args()
         args.func(args)
-        return
-
-    # ── python3 authwatch.py persistence ──
-    if len(raw) == 1 and raw[0] == "persistence":
-        cmd_persistence()
         return
 
     # ── python3 authwatch.py <time> ──
@@ -170,12 +151,13 @@ def main():
     print("AuthWatch – SSH login analyzer & security auditor")
     print()
     print("Usage:")
-    print("  python3 authwatch.py <time>              Successful logins")
-    print("  python3 authwatch.py <time> failed       Failed login attempts")
-    print("  python3 authwatch.py scan                Full session audit (terminal)")
-    print("  python3 authwatch.py scan --report       Full audit + HTML report")
-    print("  python3 authwatch.py scan --report --output /tmp/report.html")
-    print("  python3 authwatch.py persistence       Full persistence audit (verbose)")
+    print("  python3 authwatch.py <time>                    Successful logins")
+    print("  python3 authwatch.py <time> failed             Failed login attempts")
+    print("  python3 authwatch.py scan                      Session + persistence audit (summary)")
+    print("  python3 authwatch.py scan --full               Full verbose output for all modules")
+    print("  python3 authwatch.py scan --report             Audit + HTML report")
+    print("  python3 authwatch.py scan --full --report      Full audit + HTML report")
+    print("  python3 authwatch.py scan --output /tmp/r.html Custom report path")
     print()
     print("Time format: 30m  2h  1d  2w")
 
