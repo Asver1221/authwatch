@@ -100,13 +100,17 @@ def show_failed(since_raw: str, since_human: str):
 
 def cmd_scan(args):
     try:
-        from modules.session_audit import run_session_audit
-        from modules.html_report   import generate_html
+        from modules.session_audit  import run_session_audit
+        from modules.persistence    import run_persistence_audit
+        from modules.html_report    import generate_html
     except ImportError as e:
         print(f"[AuthWatch] ERROR: Could not load module: {e}")
         sys.exit(1)
 
-    data = run_session_audit()
+    session_data     = run_session_audit()
+    persistence_data = run_persistence_audit()
+
+    data = {**session_data, "persistence": persistence_data}
 
     if args.report:
         out = args.output or "authwatch_report.html"
@@ -139,7 +143,7 @@ def main():
         show_success(parse_time_arg(raw[0]), raw[0])
         return
 
-    # ── python3 authwatch.py failed <time> ──
+    # ── python3 authwatch.py <time> failed ──
     if len(raw) == 2 and raw[1] == "failed":
         show_failed(parse_time_arg(raw[0]), raw[0])
         return
