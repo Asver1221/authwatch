@@ -156,7 +156,6 @@ def main():
     print("  python3 authwatch.py scan                      Session + persistence audit (summary)")
     print("  python3 authwatch.py scan --full               Full verbose output for all modules")
     print("  python3 authwatch.py scan --report             Audit + HTML report")
-    print("  python3 authwatch.py scan --full --report      Full audit + HTML report")
     print("  python3 authwatch.py scan --output /tmp/r.html Custom report path")
     print()
     print("Time format: 30m  2h  1d  2w")
