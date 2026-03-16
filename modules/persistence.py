@@ -96,7 +96,6 @@ def check_passwd(findings: list, verbose: bool = True) -> list[dict]:
             user_col = c("green", f"{u['username']:<20}")
             print(f"  {user_col} {u['uid']:<8} {shell_col} {u['home']}")
 
-    # print()
     return users
 
 
@@ -106,7 +105,6 @@ def check_passwd(findings: list, verbose: bool = True) -> list[dict]:
 
 def check_sudoers(findings: list, verbose: bool = True) -> None:
     header("🔑  SUDO RULES  (/etc/sudoers + sudoers.d)")
-    print()
 
     sources: list = []
     if os.access("/etc/sudoers", os.R_OK):
@@ -124,7 +122,6 @@ def check_sudoers(findings: list, verbose: bool = True) -> None:
 
     if not sources:
         flag("Could not read sudoers (permission denied – run with sudo)", "info")
-        # print()
         return
 
     found_nopasswd: list = []
@@ -154,13 +151,13 @@ def check_sudoers(findings: list, verbose: bool = True) -> None:
                 "text": f"NOPASSWD rule in {path}:{lineno}: {line}",
             })
     else:
+        print()
         flag("No NOPASSWD rules found", "ok")
 
     if found_all and verbose:
         print(f"\n  {c('bold', 'ALL=(ALL) entries:')}")
         for path, lineno, line in found_all:
             flag(f"{os.path.basename(path)}:{lineno}  {line}", "info")
-    # print()
 
 
 # ──────────────────────────────────────────────
@@ -272,7 +269,6 @@ def check_crontabs(findings: list, verbose: bool = True) -> None:
 
     if not flagged:
         flag("No suspicious cron entries found", "ok")
-    # print()
 
 
 # ──────────────────────────────────────────────
@@ -323,7 +319,6 @@ def check_authorized_keys(findings: list, verbose: bool = True) -> None:
 
     if not found_any:
         flag("No authorized_keys files found", "ok")
-    # print()
 
 
 # ──────────────────────────────────────────────
@@ -397,7 +392,6 @@ def check_systemd_units(findings: list, verbose: bool = True) -> None:
                 "level": "critical", "module": "systemd",
                 "text": f"Suspicious systemd unit: {unit['path']}",
             })
-    # print()
 
 
 # ──────────────────────────────────────────────
@@ -460,7 +454,6 @@ def check_rc_files(findings: list, verbose: bool = True) -> None:
 
     if not found_any:
         flag("No suspicious RC file entries found", "ok")
-    # print()
 
 
 # ──────────────────────────────────────────────
@@ -499,7 +492,6 @@ def run_persistence_audit(verbose: bool = True) -> dict:
     print(c("bold", c("cyan", "╔══════════════════════════════════════════════╗")))
     print(c("bold", c("cyan", "║       AUTHWATCH – PERSISTENCE AUDIT          ║")))
     print(c("bold", c("cyan", "╚══════════════════════════════════════════════╝")))
-    # print()
 
     findings: list = []
 
