@@ -14,6 +14,7 @@ from modules.persistence   import run_persistence_audit
 from modules.html_report   import generate_html
 from modules.storage       import build_snapshot, save_baseline, load_baseline, save_snapshot, baseline_info
 from modules.diff          import compute_diff, show_diff
+from modules.process       import run_process_audit
 
 # ──────────────────────────────────────────────
 # Helpers
@@ -111,7 +112,11 @@ def cmd_scan(args):
 
     session_data     = run_session_audit()
     persistence_data = run_persistence_audit(verbose=verbose)
+    process_findings: list = []
+    process_data = run_process_audit(process_findings, verbose=verbose)
 
+    persistence_data["findings"].extend(process_findings)
+    persistence_data["_processes"] = process_data
     data     = {**session_data, "persistence": persistence_data}
     snapshot = build_snapshot(session_data, persistence_data)
 
