@@ -459,13 +459,13 @@ def show_summary(findings: list):
         print(f"  {c('bold', c('red', f'● CRITICAL  ({len(critical)})'))}\n")
         for f in critical:
             print(f"  {c('red', '🔴')}  {f['text']}")
-            print()
+            # print()
 
     if warnings:
         print(f"  {c('bold', c('yellow', f'● WARNINGS  ({len(warnings)})'))}\n")
         for f in warnings:
             print(f"  {c('yellow', '🟠')}  {f['text']}")
-            print()
+            # print()
 
 
 # ──────────────────────────────────────────────

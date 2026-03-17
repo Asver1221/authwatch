@@ -276,12 +276,9 @@ def run_process_audit(findings: list, verbose: bool = False) -> list[dict]:
         _print_process_table(critical)
         print()
 
-    if warnings and verbose:
+    if warnings:
         print(f"  {c('bold', c('yellow', f'● WARNINGS  ({len(warnings)} process(es))'))}\n")
         _print_process_table(warnings)
-        print()
-    elif warnings and not verbose:
-        print(f"  {c('yellow', f'🟠  {len(warnings)} warning(s) – run with --full to see details')}")
         print()
 
     # ── Populate shared findings list ──────────
