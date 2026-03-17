@@ -101,7 +101,7 @@ def show_lastb(limit: int = 20) -> list:
     header("🚫  FAILED LOGINS  (lastb)")
     entries = parse_lastb(limit)
     if not entries:
-        print(c("yellow", "  No data (root required or btmp is empty)."))
+        print(c("yellow", "\n  No data (root required or btmp is empty)."))
         return []
 
     ip_counts: dict = {}
@@ -219,7 +219,7 @@ def show_active_sessions() -> list:
     w_entries = parse_w()
 
     if not w_entries:
-        print(c("green", "  No active sessions."))
+        print(c("green", "\n  No active sessions."))
         return []
 
     print(f"  {'USER':<12} {'TTY':<8} {'FROM':<20} {'LOGIN':<8} {'IDLE':<8} {'COMMAND'}")
