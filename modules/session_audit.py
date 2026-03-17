@@ -282,12 +282,13 @@ def detect_anomalies(last_entries: list, lastb_entries: list, active: list) -> l
 
 def show_anomalies(anomalies: list) -> None:
     header("⚠️   DETECTED ANOMALIES")
+    print()
     if not anomalies:
-        print()
         print(c("green", "  ✅  No suspicious patterns detected.\n"))
         return
     for a in anomalies:
         print(f"  {a}")
+    print()
 
 
 # ── Main ──────────────────────────────────────
