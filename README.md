@@ -13,7 +13,8 @@ Reads directly from `journald`, `wtmp`, and `btmp` – no agents, no dependencie
 - **Full session audit** – `last`, `lastb`, `lastlog`, `w` in one command
 - **Persistence audit** – detects backdoors, suspicious crons, unauthorized SSH keys, RC file tampering
 - **Anomaly detection** – brute-force patterns, root SSH logins, successful logins after failures
-- **HTML report** – dark-themed, auto-generated, includes charts
+- **Baseline diff** – save a known-good snapshot and compare future scans against it
+- **HTML report** – dark-themed, auto-generated, includes charts and diff section
 
 ---
 
@@ -26,8 +27,11 @@ authwatch/
 ├── README.md
 └── modules/
     ├── __init__.py
+    ├── utils.py          # Shared helpers (colours, output, file/process utils)
     ├── session_audit.py  # Audit logic: last, lastb, lastlog, w + anomaly detection
     ├── persistence.py    # Persistence audit: crons, authorized_keys, sudoers, RC files
+    ├── storage.py        # Baseline and snapshot read/write (/var/lib/authwatch/)
+    ├── diff.py           # Snapshot comparison engine
     └── html_report.py    # HTML report generator
 ```
 
@@ -37,7 +41,7 @@ authwatch/
 
 - Python 3.10+
 - Linux with `systemd` (uses `journalctl`, `last`, `lastb`, `lastlog`, `w`)
-- Root or sudo recommended (required for `lastb`, `/etc/sudoers`, `/var/log/btmp`)
+- Root or sudo recommended (required for `lastb`, `/etc/sudoers`, `/var/log/btmp`, writing baseline)
 
 No external Python packages required.
 
@@ -85,6 +89,19 @@ sudo python3 authwatch.py scan --full --report
 sudo python3 authwatch.py scan --full --report --output /tmp/report.html
 ```
 
+### Baseline diff
+
+```bash
+# Save current state as baseline (run once on a clean system)
+sudo python3 authwatch.py scan --save-baseline
+
+# Compare current state against baseline
+sudo python3 authwatch.py scan --diff
+
+# Diff + HTML report with changes section
+sudo python3 authwatch.py scan --diff --report
+```
+
 ---
 
 ## Persistence Audit
@@ -104,11 +121,39 @@ Checks performed:
 
 ---
 
+## Baseline Diff
+
+AuthWatch can save a snapshot of the system state and highlight changes in future scans.
+Snapshots are stored in `/var/lib/authwatch/`:
+
+```
+/var/lib/authwatch/
+├── baseline.json          # reference state (--save-baseline)
+└── history/
+    └── 2026-03-17T09-15-00.json   # snapshot saved on each --diff run
+```
+
+What gets compared:
+
+| Section | Detects |
+|---------|---------|
+| Users | New/removed accounts, shell or UID changes |
+| authorized_keys | Keys added or removed per user |
+| Sudoers | NOPASSWD rules added or removed |
+| Crontabs | Entries added or removed |
+| Systemd units | Service files added or removed |
+| Stats | Failed login spikes, new attacking IPs |
+
+When used with `--report`, a **Changes vs Baseline** section is added to the HTML report.
+
+---
+
 ## HTML Report
 
 The `--report` flag generates a self-contained HTML file with:
 
 - Stat cards: successful logins, failed attempts, active sessions, anomaly count
+- Changes vs Baseline section (only when `--diff` is used)
 - Detected anomalies with severity levels (🔴 critical / 🟠 warning / 🟡 info)
 - Persistence findings grouped by module
 - Active session table with commands being run
