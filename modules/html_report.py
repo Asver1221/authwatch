@@ -24,7 +24,7 @@ def _anomaly_level(text: str) -> str:
     return "ok"
 
 
-def generate_html(data: dict, output_path: str = "authwatch_report.html"):
+def generate_html(data: dict, output_path: str = "authwatch_report.html", diff_data: dict = None):
     generated = data.get("generated", datetime.now().isoformat())
     last       = data.get("last", [])
     lastb      = data.get("lastb", [])
@@ -108,6 +108,40 @@ def generate_html(data: dict, output_path: str = "authwatch_report.html"):
             mod  = f.get("module", "").upper()
             txt  = f.get("text", "")
             out.append(f'<div class="anomaly-card {lvl}"><span style="opacity:.5;font-size:11px;margin-right:8px">[{mod}]</span>{icon}  {txt}</div>')
+        return "\n".join(out)
+
+
+    def diff_cards():
+        if not diff_data:
+            return ""
+        findings = diff_data.get("findings", [])
+        baseline_ts = diff_data.get("baseline_created", "?")[:19]
+        current_ts  = diff_data.get("current_created",  "?")[:19]
+        header_html = (
+            f'<div style="font-size:11px;color:var(--text-dim);margin-bottom:0.75rem">' +
+            f'Baseline: <span style="color:var(--accent)">{baseline_ts}</span>' +
+            f'&nbsp;&nbsp;→&nbsp;&nbsp;Now: <span style="color:var(--accent)">{current_ts}</span>' +
+            f'</div>'
+        )
+        if not findings:
+            return header_html + '<div class="anomaly-ok">✓ No changes detected since baseline</div>'
+        level_map = {"critical": "critical", "warn": "warning", "info": "info"}
+        section_icons = {
+            "users": "👤", "authorized_keys": "🗝️", "sudoers": "🔑",
+            "crontabs": "⏰", "systemd_units": "⚙️", "stats": "📊",
+        }
+        level_order = {"critical": 0, "warn": 1, "info": 2}
+        out = [header_html]
+        for f in sorted(findings, key=lambda x: level_order.get(x["level"], 9)):
+            lvl  = level_map.get(f["level"], "info")
+            sec  = f.get("section", "")
+            icon = section_icons.get(sec, "·")
+            txt  = f["text"]
+            out.append(
+                f'<div class="anomaly-card {lvl}">' +
+                f'<span style="opacity:.5;font-size:11px;margin-right:8px">[{icon} {sec.upper()}]</span>{txt}' +
+                f'</div>'
+            )
         return "\n".join(out)
 
     ip_counts: dict = {}
@@ -391,6 +425,11 @@ def generate_html(data: dict, output_path: str = "authwatch_report.html"):
     margin-top: 2rem;
   }}
 
+
+  .stat-card.diff::before  {{ background: #a78bfa; }}
+  .stat-card.diff .stat-value {{ color: #a78bfa; }}
+  .diff-section .section-header {{ border-left: 3px solid #a78bfa; }}
+
   @media (max-width: 900px) {{
     .stats-grid {{ grid-template-columns: 1fr 1fr; }}
     .two-col {{ grid-template-columns: 1fr; }}
@@ -430,9 +469,23 @@ def generate_html(data: dict, output_path: str = "authwatch_report.html"):
       <div class="stat-label">Anomalies</div>
       <div class="stat-value">{total_anomaly}</div>
     </div>
+    {f'''
+    <div class="stat-card diff">
+      <div class="stat-label">Changes vs Baseline</div>
+      <div class="stat-value">{len(diff_data.get("findings", []))}</div>
+    </div>''' if diff_data else ''}
   </div>
 
-  <div class="section">
+  {f'''<div class="section diff-section">
+    <div class="section-header">
+      <span class="section-icon">🔍</span> Changes vs Baseline
+    </div>
+    <div class="anomaly-grid">
+      {diff_cards()}
+    </div>
+  </div>''' if diff_data else ''}
+
+    <div class="section">
     <div class="section-header">
       <span class="section-icon">⚠️</span> Detected Anomalies
     </div>

@@ -12,6 +12,8 @@ import sys
 from modules.session_audit import run_session_audit
 from modules.persistence   import run_persistence_audit
 from modules.html_report   import generate_html
+from modules.storage       import build_snapshot, save_baseline, load_baseline, save_snapshot, baseline_info
+from modules.diff          import compute_diff, show_diff
 
 # ──────────────────────────────────────────────
 # Helpers
@@ -103,16 +105,37 @@ def show_failed(since_raw: str, since_human: str):
 # ──────────────────────────────────────────────
 
 def cmd_scan(args):
-    verbose = getattr(args, "full", False)
+    verbose       = getattr(args, "full",           False)
+    save_base     = getattr(args, "save_baseline",  False)
+    run_diff      = getattr(args, "diff",           False)
 
     session_data     = run_session_audit()
     persistence_data = run_persistence_audit(verbose=verbose)
 
-    data = {**session_data, "persistence": persistence_data}
+    data     = {**session_data, "persistence": persistence_data}
+    snapshot = build_snapshot(session_data, persistence_data)
 
+    # ── baseline mode ──────────────────────────
+    if save_base:
+        save_baseline(snapshot)
+        return
+
+    # ── diff mode ──────────────────────────────
+    diff_data = None
+    if run_diff:
+        baseline = load_baseline()
+        if baseline is None:
+            print("[AuthWatch] No baseline found. Run with --save-baseline first.")
+        else:
+            baseline_info()
+            diff_data = compute_diff(baseline, snapshot)
+            show_diff(diff_data)
+            save_snapshot(snapshot)
+
+    # ── report ─────────────────────────────────
     if args.report:
         out = args.output or "authwatch_report.html"
-        generate_html(data, output_path=out)
+        generate_html(data, output_path=out, diff_data=diff_data)
 
 
 # ──────────────────────────────────────────────
@@ -131,7 +154,9 @@ def main():
         scan_p = subparsers.add_parser("scan", help="Full system session audit")
         scan_p.add_argument("--report", action="store_true", help="Generate an HTML report")
         scan_p.add_argument("--output", type=str,            help="Output path for HTML report (default: authwatch_report.html)")
-        scan_p.add_argument("--full",   action="store_true", help="Show full verbose output for all modules")
+        scan_p.add_argument("--full",           action="store_true", help="Show full verbose output for all modules")
+        scan_p.add_argument("--save-baseline",  action="store_true", help="Save current state as baseline for future diffs")
+        scan_p.add_argument("--diff",           action="store_true", help="Compare current state against saved baseline")
         scan_p.set_defaults(func=cmd_scan)
         args = parser.parse_args()
         args.func(args)
@@ -157,6 +182,9 @@ def main():
     print("  python3 authwatch.py scan --full               Full verbose output for all modules")
     print("  python3 authwatch.py scan --report             Audit + HTML report")
     print("  python3 authwatch.py scan --output /tmp/r.html Custom report path")
+    print("  python3 authwatch.py scan --save-baseline      Save current state as baseline")
+    print("  python3 authwatch.py scan --diff               Compare against baseline")
+    print("  python3 authwatch.py scan --diff --report      Diff + HTML report with changes")
     print()
     print("Time format: 30m  2h  1d  2w")
 

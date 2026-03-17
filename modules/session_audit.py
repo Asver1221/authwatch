@@ -101,6 +101,7 @@ def show_lastb(limit: int = 20) -> list:
     header("🚫  FAILED LOGINS  (lastb)")
     entries = parse_lastb(limit)
     if not entries:
+        print()
         print(c("yellow", "  No data (root required or btmp is empty)."))
         return []
 
@@ -219,6 +220,7 @@ def show_active_sessions() -> list:
     w_entries = parse_w()
 
     if not w_entries:
+        print()
         print(c("green", "  No active sessions."))
         return []
 
@@ -280,12 +282,13 @@ def detect_anomalies(last_entries: list, lastb_entries: list, active: list) -> l
 
 def show_anomalies(anomalies: list) -> None:
     header("⚠️   DETECTED ANOMALIES")
+    print()
     if not anomalies:
-        print()
         print(c("green", "  ✅  No suspicious patterns detected.\n"))
         return
     for a in anomalies:
         print(f"  {a}")
+    print()
 
 
 # ── Main ──────────────────────────────────────
