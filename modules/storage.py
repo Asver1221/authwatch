@@ -106,7 +106,7 @@ def build_snapshot(session_data: dict, persistence_data: dict) -> dict:
     # ── Filesystem ─────────────────────────────
     filesystem_raw = persistence_data.get("_filesystem", [])
     filesystem = [
-        {"path": e["path"], "level": e["level"]}
+        {"path": e["path"], "level": e.get("level", "warn")}
         for e in filesystem_raw
         if isinstance(e, dict) and "path" in e
     ]
