@@ -103,6 +103,14 @@ def build_snapshot(session_data: dict, persistence_data: dict) -> dict:
     # ── Systemd units ──────────────────────────
     systemd_units = persistence_data.get("_systemd_units", [])
 
+    # ── Filesystem ─────────────────────────────
+    filesystem_raw = persistence_data.get("_filesystem", [])
+    filesystem = [
+        {"path": e["path"], "level": e["level"]}
+        for e in filesystem_raw
+        if isinstance(e, dict) and "path" in e
+    ]
+
     # ── Login stats ────────────────────────────
     ip_fails: dict = {}
     for e in lastb:
@@ -127,6 +135,7 @@ def build_snapshot(session_data: dict, persistence_data: dict) -> dict:
         "sudoers":        sudoers,
         "crontabs":       crontabs,
         "systemd_units":  systemd_units,
+        "filesystem":     filesystem,
         "stats":          stats,
     }
 

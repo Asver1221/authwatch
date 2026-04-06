@@ -111,6 +111,25 @@ def generate_html(data: dict, output_path: str = "authwatch_report.html", diff_d
         return "\n".join(out)
 
 
+    def filesystem_cards():
+        persistence = data.get("persistence", {})
+        findings = [
+            f for f in persistence.get("findings", [])
+            if f.get("module") == "filesystem"
+        ] if persistence else []
+        if not findings:
+            return '<div class="anomaly-ok">✓ No filesystem anomalies found</div>'
+        level_map = {"critical": "critical", "warn": "warning", "info": "info"}
+        icons     = {"critical": "🔴", "warn": "🟠", "info": "🟡"}
+        out = []
+        for f in findings:
+            lvl  = level_map.get(f.get("level", "info"), "info")
+            icon = icons.get(f.get("level", "info"), "🟡")
+            txt  = f.get("text", "")
+            out.append(f'<div class="anomaly-card {lvl}">{icon}  {txt}</div>')
+        return "\n".join(out)
+
+
     def diff_cards():
         if not diff_data:
             return ""
@@ -543,6 +562,15 @@ def generate_html(data: dict, output_path: str = "authwatch_report.html", diff_d
         </tr></thead>
         <tbody>{rows_lastb()}</tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📁</span> Filesystem Findings
+    </div>
+    <div class="anomaly-grid">
+      {filesystem_cards()}
     </div>
   </div>
 
